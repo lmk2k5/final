@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Verify Account</title>
+    <link rel="stylesheet" href="Verify.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Kadwa&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="background-animated">
+      <div class="blur-circle circle1"></div>
+      <div class="blur-circle circle2"></div>
+      <div class="blur-circle circle3"></div>
+      <div class="blur-circle circle4"></div>
+    </div>
+
+    <div class="verify-container">
+      <div class="verify-box">
+        <h2 id="form-title">Create Account</h2>
+        <div id="error-message" style="color: red; margin-bottom: 10px; display: none;"></div>
+        <form id="auth-form">
+          <input type="email" id="email" name="email" placeholder="Email" required autocomplete="email" />
+          <input type="password" id="password" name="password" placeholder="Password" required autocomplete="current-password" />
+          <div id="remember-me">
+            <label><input type="checkbox" id="remember" name="remember" /> Remember Me</label>
+          </div>
+          <button type="submit" id="submit-btn">Create Account</button>
+        </form>
+
+        <div class="or-separator">OR</div>
+
+        <button id="toggle-btn">Login</button>
+      </div>
+    </div>
+
+    <script type="module">
+      import api from './api.js';
+
+      let isLoginMode = false;
+
+      function toggleForm(mode) {
+        isLoginMode = mode === 'login';
+        document.getElementById('form-title').textContent = isLoginMode ? 'Login' : 'Create Account';
+        document.getElementById('toggle-btn').textContent = isLoginMode ? 'Create Account' : 'Login';
+        document.getElementById('submit-btn').textContent = isLoginMode ? 'Login' : 'Create Account';
+        document.getElementById('remember-me').style.display = isLoginMode ? 'block' : 'none';
+        document.getElementById('error-message').style.display = 'none';
+        
+        // Update password field autocomplete based on mode
+        const passwordField = document.getElementById('password');
+        passwordField.autocomplete = isLoginMode ? 'current-password' : 'new-password';
+      }
+
+      function showError(message) {
+        const errorElement = document.getElementById('error-message');
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+      }
+
+      async function handleSubmit(event) {
+        event.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const remember = document.getElementById('remember').checked;
+
+        try {
+          if (isLoginMode) {
+            const response = await api.login(email, password);
+            if (remember) {
+              // Remember login state is handled by localStorage in api.js
+            }
+            window.location.href = '/Index.html';
+          } else {
+            await api.signup(email, password);
+            // After successful signup, switch to login mode
+            toggleForm('login');
+            showError('Account created successfully! Please login.');
+          }
+        } catch (error) {
+          showError(error.message);
+        }
+      }
+
+      window.onload = () => {
+        // Check if user is already logged in
+        if (api.isAuthenticated()) {
+          window.location.href = '/Index.html';
+          return;
+        }
+
+        toggleForm('register'); // default state
+        document.getElementById('toggle-btn').addEventListener('click', () => {
+          const currentTitle = document.getElementById('form-title').textContent;
+          const mode = currentTitle === 'Login' ? 'register' : 'login';
+          toggleForm(mode);
+        });
+
+        document.getElementById('auth-form').addEventListener('submit', handleSubmit);
+      };
+    </script>
+  </body>
+</html>
